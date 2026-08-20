@@ -1,7 +1,12 @@
 
 
-from fastapi import APIRouter
-from app.schemas import LeadCreate, LeadStatus, LeadUpdate
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from datetime import datetime, timezone
+
+from app.schemas import LeadCreate, LeadStatus, LeadUpdate, LeadRead
+from app.database import get_db
+from app.models import Lead
 
 
 router = APIRouter(prefix="/leads", tags=["leads"])
@@ -10,10 +15,23 @@ router = APIRouter(prefix="/leads", tags=["leads"])
 
 # POST endpoint after receiving validated form from frontend
 # add data from form to database
-@router.post("/")
-def create_lead(body: LeadCreate):
-    # create new lead in database
-    return {"message": "Lead created successfully"}
+
+@router.post("", response_model=LeadRead)
+
+def create_lead(body: LeadCreate, db: Session = Depends(get_db)):
+    lead = Lead(
+        name=body.name,
+        email=body.email,
+        phone=body.phone,
+        message=body.message,
+        status="new",
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+    db.add(lead)
+    db.commit()
+    db.refresh(lead)
+    return lead
 
 
 # GET /leads | retrieve leads from database
