@@ -1,7 +1,7 @@
 """ Pydantic schemas for API endpoints """
 
 from pydantic import BaseModel, Field, EmailStr
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 
 
@@ -36,6 +36,7 @@ class LeadRead(LeadBase):
     note: str | None
     created_at: datetime
     updated_at: datetime
+    deleted_at: datetime | None
 
 
 class LeadUpdate(BaseModel):
