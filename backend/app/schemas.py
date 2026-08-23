@@ -10,7 +10,7 @@ class LeadBase(BaseModel):
     name: str = Field(..., min_length=3, max_length=100, description="Full name")
     email: EmailStr = Field(..., description="Email address")
     phone: str = Field(description="Phone number")
-    message: str = Field(description="Message")
+    message: str = Field(max_length=2000, description="Message")
 
 
 class LeadCreate(LeadBase):
