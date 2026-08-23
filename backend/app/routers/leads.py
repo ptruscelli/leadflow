@@ -22,7 +22,9 @@ def create_lead(body: LeadCreate, db: Session = Depends(get_db)):
     lead = Lead(
         name=body.name,
         email=body.email,
-        phone=body.phone,
+        phone=body.phone or None,
+        company=body.company,
+        source=body.source.value,
         message=body.message,
         status="new",
         created_at=datetime.now(timezone.utc),
@@ -68,7 +70,7 @@ def update_lead(id: int, body: LeadUpdate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail="Cannot edit a deleted lead")
 
     if body.status is None and body.note is None:
-        raise HTTPException(status_code=422, detail="No fields to updated")
+        raise HTTPException(status_code=422, detail="No fields to update")
 
     if body.status is not None:
         lead.status = body.status

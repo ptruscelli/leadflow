@@ -20,7 +20,9 @@ class Lead(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str]
     email: Mapped[str]
+    company: Mapped[str]
     phone: Mapped[str | None] = mapped_column(default=None)
+    source: Mapped[str]
     message: Mapped[str]
     status: Mapped[str] = mapped_column(default="new")
     note: Mapped[str | None] = mapped_column(default=None)
