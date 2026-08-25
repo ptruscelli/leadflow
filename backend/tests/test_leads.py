@@ -1,4 +1,4 @@
-
+from datetime import datetime, timezone
 
 dummy_lead = {
     "name": "test name",
@@ -28,11 +28,13 @@ def test_soft_delete_filtering(client):
     assert response.status_code == 200
 
     response = client.get("/leads")
+    
     assert response.status_code == 200
     assert len(response.json()) == 1
     assert response.json()[0]["id"] == lead_2_id
 
     response = client.get("/leads?deleted=true")
+    # test deleted lead is correctly filtered but still accessible
     assert response.status_code == 200
     assert len(response.json()) == 1
     assert response.json()[0]["id"] == lead_id
@@ -80,13 +82,18 @@ def test_clear_note(client):
 
     
 
-# "server is source of truth": POST trying to set status/created at,
-# server still generates correct timestamps and status="new"
-
+# "server is source of truth":
+# POST trying to set status/created at, should be rejected
 def test_server_truth(client):
     response = client.post("/leads", json={
         **dummy_lead,
         "status": "contacted",
+    })
+    assert response.status_code == 422
+
+    response = client.post("/leads", json={
+        **dummy_lead,
+        "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc).isoformat()
     })
     assert response.status_code == 422
 
