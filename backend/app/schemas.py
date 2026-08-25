@@ -33,6 +33,7 @@ class LeadBase(BaseModel):
 
 class LeadCreate(LeadBase):
     # create new lead from frontend form
+    model_config = {"extra": "forbid"}
     pass
 
 
@@ -52,5 +53,6 @@ class LeadRead(LeadBase):
 class LeadUpdate(BaseModel):
     # update status and/or note
     # | None = none allows updating only one field
+    model_config = {"extra": "forbid"}
     status: LeadStatus | None = None
     note:str | None = None
