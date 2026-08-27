@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Cookie
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -10,7 +10,7 @@ import asyncio
 import resend
 
 from app.schemas import MagicLinkRequest, LoginRequest
-from app.database import get_db
+from app.deps import get_db
 from app.models import MagicLink, AuthSession
 from app.config import settings
 
@@ -136,15 +136,29 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
 
 
 
-# when setting cooking in POST /auth/login
-# response.set_cookie(
-# key="session",
-# value=raw_session_token,
-# httponly=True,  # JavaScript cannot read the cookie (stops XSS)
-# secure=True,    # Only sent over HTTPS
-# samesite="lax"  # Prevents CSRF attacks
-
 # POST /auth/logout 
 # delete session
 # delete cookie
+@router.post("/logout", status_code=200)
+def logout(
+    db: Session = Depends(get_db),
+    session:str | None = Cookie(default=None)):
 
+    if session:
+        hashed_token = hashlib.sha256(session.encode()).hexdigest()
+        auth_session = db.scalars(
+            select(AuthSession).where(AuthSession.token_hash == hashed_token)
+        ).first()
+
+        if auth_session is not None:
+            db.delete(auth_session)
+            db.commit()
+            
+    response = JSONResponse(content={"message": "Logout successful"})
+    response.delete_cookie(
+        key="session",
+        path="/",
+        samesite="lax",
+        secure=settings.secure_cookies,
+    )
+    return response
