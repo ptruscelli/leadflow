@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     frontend_domain: str
     log_magic_links: bool = False
     secure_cookies: bool = False
+    resend_api_key: str
+    resend_sender_email: str
 
     @property 
     def staff_emails(self) -> set[str]:

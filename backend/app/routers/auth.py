@@ -6,7 +6,8 @@ from datetime import datetime, timezone, timedelta
 import secrets
 import hashlib
 import logging
-
+import asyncio
+import resend
 
 from app.schemas import MagicLinkRequest, LoginRequest
 from app.database import get_db
@@ -17,15 +18,35 @@ from app.config import settings
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
 
-# AUTH
+resend.api_key = settings.resend_api_key
+
+# helper function to send email with Resend API
+async def send_email(to_email: str, magic_link: str):
+
+    try:
+        await asyncio.to_thread(resend.Emails.send, {
+            "from": f"Brightline Login <{settings.resend_sender_email}>",
+            "to": [to_email],
+            "subject": "Brightline Login Link",
+            "html": f"<p><a href='{magic_link}'>Click here to login</a></p>",
+            "text": f"Click here to login: {magic_link}", # plain text backup
+        })
+
+    except Exception as e:
+        logger.error("Failed to send email: %s", e)
+        # no raise so that caller continues, returns 200
+        # log fallback can still print URL
+
+    
+
 
 # POST /auth/magic-link
-# check it is an email
+
 # check allowlist from env
 # create hashed token, send email, log URL
 # return 200 with the generic message
 @router.post("/magic-link", status_code=200)
-def send_magic_link(body: MagicLinkRequest, db: Session = Depends(get_db)):
+async def send_magic_link(body: MagicLinkRequest, db: Session = Depends(get_db)):
 
     if body.email.lower() in settings.staff_emails:
 
@@ -50,6 +71,8 @@ def send_magic_link(body: MagicLinkRequest, db: Session = Depends(get_db)):
         # send email with magic link
         URL = f"{settings.frontend_domain}/auth/login?token={raw_token}"
 
+        await send_email(body.email.lower(), URL)
+
         if settings.log_magic_links:
             logger.info(f"Magic link sent to {body.email}: {URL}")
          
@@ -59,6 +82,7 @@ def send_magic_link(body: MagicLinkRequest, db: Session = Depends(get_db)):
 
   
 # POST /auth/login
+
 # hash incoming token and look up
 # reject if not found, used, or expired
 # set used_at (or delete token as soon as it is validated/used)
