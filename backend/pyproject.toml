@@ -6,11 +6,13 @@ dependencies = [
     "alembic>=1.19.1",
     "fastapi[standard]>=0.141.1",
     "httpx>=0.28.1",
+    "resend>=2.42.0",
     "sqlalchemy>=2.0.52",
 ]
 
 [dependency-groups]
 dev = [
+    "httpx2>=2.12.0",
     "pytest>=9.1.1",
 ]
 

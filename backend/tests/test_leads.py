@@ -12,6 +12,7 @@ dummy_lead = {
 
 # soft-delete filtering (GET /leads should exclude deleted leads by default)
 def test_soft_delete_filtering(client):
+    # create two leads
     created = client.post("/leads", json={
         **dummy_lead
     })
@@ -24,11 +25,12 @@ def test_soft_delete_filtering(client):
     assert created_2.status_code == 201
     lead_2_id = created_2.json()["id"]
 
+    # soft-delete first lead
     response = client.delete(f"/leads/{lead_id}")
     assert response.status_code == 200
 
     response = client.get("/leads")
-    
+    # test deleted lead is not returned
     assert response.status_code == 200
     assert len(response.json()) == 1
     assert response.json()[0]["id"] == lead_2_id
@@ -49,12 +51,15 @@ def test_edit_deleted_lead(client):
     assert created.status_code == 201
     lead_id = created.json()["id"]
 
+    # soft-delete lead
     response = client.delete(f"/leads/{lead_id}")
     assert response.status_code == 200
 
+    # try to edit deleted lead
     response = client.patch(f"/leads/{lead_id}", json={
         "note": "called on thursday"
     })
+    # test edit is rejected
     assert response.status_code == 409
     assert response.json()["detail"] == "Cannot edit a deleted lead"
 

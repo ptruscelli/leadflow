@@ -56,3 +56,16 @@ class LeadUpdate(BaseModel):
     model_config = {"extra": "forbid"}
     status: LeadStatus | None = None
     note:str | None = None
+
+
+
+# AUTH
+
+class MagicLinkRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    email: EmailStr = Field(..., description="Email address")
+
+
+class LoginRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    raw_token: str = Field(..., min_length=1, description="Magic link token")

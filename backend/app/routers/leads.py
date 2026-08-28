@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 
 from app.schemas import LeadCreate, LeadUpdate, LeadRead
-from app.database import get_db
 from app.models import Lead
+from app.deps import require_session, get_db
 
 
 router = APIRouter(prefix="/leads", tags=["leads"])
@@ -38,7 +38,11 @@ def create_lead(body: LeadCreate, db: Session = Depends(get_db)):
 
 # GET /leads | get list of leads from database
 @router.get("", response_model=list[LeadRead])
-def get_leads(db: Session = Depends(get_db), deleted: bool = False):
+def get_leads(
+    db: Session = Depends(get_db),
+    _email: str = Depends(require_session),
+    deleted: bool = False):
+
     if deleted:
         stmt = select(Lead).where(Lead.deleted_at.is_not(None))
     else:
@@ -50,7 +54,11 @@ def get_leads(db: Session = Depends(get_db), deleted: bool = False):
 
 # GET /leads/{id} | open lead to see full enquiry
 @router.get("/{id}", response_model=LeadRead)
-def get_lead(id: int, db: Session = Depends(get_db)):
+def get_lead(
+    id: int,
+    db: Session = Depends(get_db),
+    _email: str = Depends(require_session)):
+
     lead = db.get(Lead, id)
 
     if lead is None:
@@ -61,7 +69,12 @@ def get_lead(id: int, db: Session = Depends(get_db)):
 
 # PATCH /leads/{id}| update lead status or add/edit note
 @router.patch("/{id}", response_model=LeadRead)
-def update_lead(id: int, body: LeadUpdate, db: Session = Depends(get_db)):
+def update_lead(
+    id: int,
+    body: LeadUpdate,
+    db: Session = Depends(get_db),
+    _email: str = Depends(require_session)):
+
     lead = db.get(Lead, id)
 
     if lead is None:
@@ -88,7 +101,10 @@ def update_lead(id: int, body: LeadUpdate, db: Session = Depends(get_db)):
 
 # DELETE /leads/{id} | soft-delete with {"deleted_at": current_time}
 @router.delete("/{id}", response_model=LeadRead)
-def delete_lead(id: int, db: Session = Depends(get_db)):
+def delete_lead(
+    id: int,
+    db: Session = Depends(get_db),
+    _email: str = Depends(require_session)):
     lead = db.get(Lead, id)
 
     if lead is None:
