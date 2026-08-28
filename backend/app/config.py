@@ -7,7 +7,7 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=BACKEND_DIR / ".env")
 
-    database_url: str = f"sqlite:///{BACKEND_DIR / 'data' / 'leads.db'}"
+    database_url: str
     staff_allowlist: str = ""
     frontend_domain: str
     log_magic_links: bool = False
@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     @property 
     def staff_emails(self) -> set[str]:
+    # property that splits, trims, and lowercases staff_allowlist    
         return {
             email.strip().lower() # drop accidental whitespace (e.g " email") and convert to lowercase
             for email in self.staff_allowlist.split(",") # split on comma
