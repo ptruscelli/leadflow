@@ -9,6 +9,7 @@ from app.database import SessionLocal
 from app.models import AuthSession
 
 
+
 # dependency to get a database session
 def get_db():
     db = SessionLocal()

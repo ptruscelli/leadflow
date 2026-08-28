@@ -137,10 +137,9 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
 
 
 # POST /auth/logout 
-# delete session
-# delete cookie
 @router.post("/logout", status_code=200)
 def logout(
+    # deletes session and cookie
     db: Session = Depends(get_db),
     session:str | None = Cookie(default=None)):
 
