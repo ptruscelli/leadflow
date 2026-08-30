@@ -1,11 +1,13 @@
 
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
+from typing import Annotated
+from math import ceil
 
-from app.schemas import LeadCreate, LeadUpdate, LeadRead
+from app.schemas import LeadCreate, LeadUpdate, LeadRead, LeadsResponsePaginated
 from app.models import Lead
 from app.deps import require_session, get_db
 
@@ -37,19 +39,41 @@ def create_lead(body: LeadCreate, db: Session = Depends(get_db)):
 
 
 # GET /leads | get list of leads from database
-@router.get("", response_model=list[LeadRead])
+@router.get("", response_model=LeadsResponsePaginated)
 def get_leads(
     db: Session = Depends(get_db),
     _email: str = Depends(require_session),
-    deleted: bool = False):
-
+    deleted: bool = False,
+    page: Annotated[int, Query(ge=1)] = 1, # page number
+    page_size: Annotated[int, Query(ge=1, le=10)] = 10, # max 10 leads per page
+):
+    # filter active leads or archive from deleted=true or false query param
     if deleted:
-        stmt = select(Lead).where(Lead.deleted_at.is_not(None))
+        deleted_filter = Lead.deleted_at.is_not(None)
     else:
-        stmt = select(Lead).where(Lead.deleted_at.is_(None))
-    stmt = stmt.order_by(Lead.created_at.desc())
+        deleted_filter = Lead.deleted_at.is_(None)
+
+    total_leads= db.scalar(select(func.count()).select_from(Lead).where(deleted_filter)) or 0
+    total_pages = ceil(total_leads / page_size) if total_leads else 0 # round up so leftover leads are on next page
+
+    offset = (page - 1) * page_size # pages counted from 1, but SQL OFFSET is from 0
+
+    stmt = (
+        select(Lead)
+        .where(deleted_filter)
+        .order_by(Lead.created_at.desc())
+        .offset(offset)
+        .limit(page_size)
+    )
     leads = db.scalars(stmt).all()
-    return leads
+
+    return LeadsResponsePaginated(
+        leads=leads,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+        total_items=total_leads,
+    )
 
 
 # GET /leads/{id} | open lead to see full enquiry

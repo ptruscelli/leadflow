@@ -57,8 +57,12 @@ class LeadUpdate(BaseModel):
     status: LeadStatus | None = None
     note:str | None = None
 
-
-
+class LeadsResponsePaginated(BaseModel):
+    leads: list[LeadRead]
+    page: int
+    page_size: int
+    total_pages: int
+    total_items: int
 # AUTH
 
 class MagicLinkRequest(BaseModel):
