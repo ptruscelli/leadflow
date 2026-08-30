@@ -10,10 +10,11 @@ class Settings(BaseSettings):
     database_url: str
     staff_allowlist: str = ""
     frontend_domain: str
-    log_magic_links: bool = False
+    log_magic_links: bool = True
     secure_cookies: bool = False
     resend_api_key: str
     resend_sender_email: str
+    generate_demo_data: bool = False # so that tests can run without generating demo data
 
     @property 
     def staff_emails(self) -> set[str]:

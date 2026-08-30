@@ -32,14 +32,14 @@ def test_soft_delete_filtering(client):
     response = client.get("/leads")
     # test deleted lead is not returned
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0]["id"] == lead_2_id
+    assert len(response.json()["leads"]) == 1
+    assert response.json()["leads"][0]["id"] == lead_2_id
 
     response = client.get("/leads?deleted=true")
     # test deleted lead is correctly filtered but still accessible
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0]["id"] == lead_id
+    assert len(response.json()["leads"]) == 1
+    assert response.json()["leads"][0]["id"] == lead_id
 
 
 
