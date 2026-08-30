@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 const STATUSES = ["new", "contacted", "qualified", "closed"];
+const PAGE_SIZE = 10;
 
 function formatStatus(status) {
   return status.charAt(0).toUpperCase() + status.slice(1);
@@ -22,6 +23,8 @@ function formatDateTime(iso) {
 export default function LeadsInbox() {
   const router = useRouter();
   const [deleted, setDeleted] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
   const [leads, setLeads] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [isAddingNote, setIsAddingNote] = useState(false);
@@ -39,7 +42,7 @@ export default function LeadsInbox() {
 
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/leads?deleted=${deleted}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/leads?deleted=${deleted}&page=${page}&page_size=${PAGE_SIZE}`,
           { credentials: "include" }
         );
 
@@ -53,13 +56,18 @@ export default function LeadsInbox() {
         }
 
         const data = await response.json();
+        if (!Array.isArray(data.leads)) {
+          throw new Error("Failed to load leads");
+        }
         if (!cancelled) {
-          setLeads(data);
+          setLeads(data.leads);
+          setTotalPages(data.total_pages ?? 0);
         }
       } catch (error) {
         console.error(error);
         if (!cancelled) {
           setLeads([]);
+          setTotalPages(0);
           alert("Failed to load leads");
         }
       }
@@ -70,7 +78,7 @@ export default function LeadsInbox() {
     return () => {
       cancelled = true;
     };
-  }, [deleted, router]);
+  }, [deleted, page, router]);
 
   useEffect(() => {
     const field = noteFieldRef.current;
@@ -173,8 +181,12 @@ export default function LeadsInbox() {
 
   async function deleteLead(leadId) {
     const previous = leads;
-
-    setLeads((current) => current.filter((lead) => lead.id !== leadId));
+    const previousPage = page;
+    const remaining = leads.filter((lead) => lead.id !== leadId);
+    setLeads(remaining);
+    if (remaining.length === 0 && page > 1) {
+      setPage((currentPage) => currentPage - 1);
+    }
     if (expandedId === leadId) {
       setExpandedId(null);
       setIsAddingNote(false);
@@ -201,6 +213,7 @@ export default function LeadsInbox() {
     } catch (error) {
       console.error(error);
       setLeads(previous);
+      setPage(previousPage);
       alert("Failed to delete lead");
     }
   }
@@ -224,14 +237,20 @@ export default function LeadsInbox() {
       <div className="mb-4 flex gap-6 border-b border-slate-200">
         <button
           type="button"
-          onClick={() => setDeleted(false)}
+          onClick={() => {
+            setDeleted(false);
+            setPage(1);
+          }}
           className={tabClass(!deleted)}
         >
           Leads
         </button>
         <button
           type="button"
-          onClick={() => setDeleted(true)}
+          onClick={() => {
+            setDeleted(true);
+            setPage(1);
+          }}
           className={tabClass(deleted)}
         >
           Archive
@@ -372,6 +391,33 @@ export default function LeadsInbox() {
           </ul>
         )}
       </div>
+
+      {leads !== null && totalPages > 0 && (
+        <nav
+          aria-label="Lead pages"
+          className="mt-4 flex items-center justify-between text-sm text-slate-600"
+        >
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => setPage((current) => current - 1)}
+            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Previous
+          </button>
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            disabled={page >= totalPages}
+            onClick={() => setPage((current) => current + 1)}
+            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Next
+          </button>
+        </nav>
+      )}
     </main>
   );
 }
