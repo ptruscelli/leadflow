@@ -7,7 +7,9 @@ export default function Home() {
   return (
     <>
       <PublicNavbar />
-      <EnquiryForm />
+      <div className="px-4 py-10">
+        <EnquiryForm />
+      </div>
     </>
   );
 }

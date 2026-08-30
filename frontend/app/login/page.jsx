@@ -3,9 +3,11 @@ import PublicNavbar from "../components/PublicNavbar";
 
 export default function LoginPage() {
   return (
-    <main>
+    <>
       <PublicNavbar />
-      <LoginForm />
-    </main>
+      <div className="px-4 py-10">
+        <LoginForm />
+      </div>
+    </>
   );
 }

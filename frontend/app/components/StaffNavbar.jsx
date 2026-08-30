@@ -20,12 +20,17 @@ export default function StaffNavbar() {
   }
 
   return (
-      <header>
-        <nav>
-          <Link href="/">Home</Link>
-          <button type="button" onClick={handleLogout}>Log Out</button>
-        </nav>
-      </header>
-
+    <nav className="flex justify-center gap-8 border-y border-slate-200 bg-white py-3 text-sm">
+      <Link href="/" className="text-slate-600 hover:text-slate-900">
+        Home
+      </Link>
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="cursor-pointer text-slate-600 hover:text-slate-900"
+      >
+        Log Out
+      </button>
+    </nav>
   );
 }
