@@ -24,7 +24,7 @@ class Lead(Base):
     phone: Mapped[str | None] = mapped_column(default=None)
     source: Mapped[str]
     message: Mapped[str]
-    status: Mapped[str] = mapped_column(default="new")
+    status: Mapped[str] = mapped_column(index=True, default="new")
     note: Mapped[str | None] = mapped_column(default=None)
     created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))

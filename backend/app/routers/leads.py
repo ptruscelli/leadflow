@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Annotated
 from math import ceil
 
-from app.schemas import LeadCreate, LeadUpdate, LeadRead, LeadsResponsePaginated
+from app.schemas import LeadCreate, LeadUpdate, LeadRead, LeadsResponsePaginated, LeadStatus
 from app.models import Lead
 from app.deps import require_session, get_db
 
@@ -44,6 +44,7 @@ def get_leads(
     db: Session = Depends(get_db),
     _email: str = Depends(require_session),
     deleted: bool = False,
+    status: Annotated[LeadStatus | None, Query()] = None,
     q: Annotated[str | None, Query(max_length=50)] = None,
     page: Annotated[int, Query(ge=1)] = 1, # page number
     page_size: Annotated[int, Query(ge=1, le=10)] = 10, # max 10 leads per page
@@ -56,6 +57,9 @@ def get_leads(
         deleted_filter = Lead.deleted_at.is_(None)
 
     filters = [deleted_filter] # build filters list
+
+    if status is not None:
+        filters.append(Lead.status == status.value)
 
     if q and q.strip(): # if q is not None or q is not empty string
         q = q.strip() # remove whitespace
