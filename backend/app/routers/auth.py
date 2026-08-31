@@ -127,8 +127,8 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
         value=raw_session_token,
         httponly=True, # JavaScript cannot read the cookie (stops XSS)
         secure=settings.secure_cookies, # Only sent over HTTPS (if = true in .env)
-        samesite="lax", # Prevents CSRF attacks
-        max_age=8 * 60 * 60, # 8 hours in seconds (matches db session expiry)
+        samesite="none", # Allows cross-site requests (needed for frontend)
+        max_age=8 * 60 * 60, # 8 hours (matches db session expiry)
         path="/", # set cookie for all paths
     )
     return response
@@ -157,7 +157,7 @@ def logout(
     response.delete_cookie(
         key="session",
         path="/",
-        samesite="lax",
+        samesite="none",
         secure=settings.secure_cookies,
     )
     return response
