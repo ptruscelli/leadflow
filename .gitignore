@@ -25,6 +25,10 @@ node_modules/
 out/
 .vercel/
 
+# Local / generated agent files
+.agents/skills/fastapi
+.claude/skills/fastapi
+
 # OS / editor
 .DS_Store
 .idea/

@@ -22,11 +22,11 @@ class LeadStatus(str, Enum):
 
 class LeadBase(BaseModel):
     # base model for lead
-    name: str = Field(..., min_length=3, max_length=100, description="Full name")
+    name: str = Field(..., min_length=1, max_length=100, description="Full name")
     email: EmailStr = Field(..., description="Email address")
     phone: str | None = Field(None, description="Phone number")
     company: str = Field(..., min_length=1, max_length=100, description="Company name")
-    message: str = Field(...,max_length=2000, description="Message")
+    message: str = Field(..., min_length=1, max_length=2000, description="Message")
     source: LeadSource = Field(..., description="How enquirer heard about agency")
 
 

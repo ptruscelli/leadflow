@@ -47,7 +47,7 @@ def get_leads(
     status: Annotated[LeadStatus | None, Query()] = None,
     q: Annotated[str | None, Query(max_length=50)] = None,
     page: Annotated[int, Query(ge=1)] = 1, # page number
-    page_size: Annotated[int, Query(ge=1, le=10)] = 10, # max 10 leads per page
+    page_size: Annotated[int, Query(ge=1, le=50)] = 10, # max 50 leads per page
 ):
 
     # filter active leads or archive from deleted=true or false query param
