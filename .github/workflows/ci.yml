@@ -1,0 +1,30 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: sqlite://
+      STAFF_ALLOWLIST: test@example.com
+      FRONTEND_DOMAIN: http://localhost:3000
+      RESEND_API_KEY: test
+      RESEND_SENDER_EMAIL: test@example.com
+      GENERATE_DEMO_DATA: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+      - run: uv run --frozen pytest
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: touch backend/.env
+      - run: docker compose build
