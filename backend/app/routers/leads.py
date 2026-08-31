@@ -1,7 +1,7 @@
 
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from typing import Annotated
@@ -44,23 +44,38 @@ def get_leads(
     db: Session = Depends(get_db),
     _email: str = Depends(require_session),
     deleted: bool = False,
+    q: Annotated[str | None, Query(max_length=50)] = None,
     page: Annotated[int, Query(ge=1)] = 1, # page number
     page_size: Annotated[int, Query(ge=1, le=10)] = 10, # max 10 leads per page
 ):
+
     # filter active leads or archive from deleted=true or false query param
     if deleted:
         deleted_filter = Lead.deleted_at.is_not(None)
     else:
         deleted_filter = Lead.deleted_at.is_(None)
 
-    total_leads= db.scalar(select(func.count()).select_from(Lead).where(deleted_filter)) or 0
+    filters = [deleted_filter] # build filters list
+
+    if q and q.strip(): # if q is not None or q is not empty string
+        q = q.strip() # remove whitespace
+        filters.append(
+            or_( # only need one matching filter 
+            Lead.name.ilike(f"%{q}%"),
+            Lead.email.ilike(f"%{q}%"),
+            Lead.phone.ilike(f"%{q}%"),
+            Lead.company.ilike(f"%{q}%"),
+        )) 
+
+       
+    total_leads= db.scalar(select(func.count()).select_from(Lead).where(*filters)) or 0
     total_pages = ceil(total_leads / page_size) if total_leads else 0 # round up so leftover leads are on next page
 
     offset = (page - 1) * page_size # pages counted from 1, but SQL OFFSET is from 0
 
     stmt = (
         select(Lead)
-        .where(deleted_filter)
+        .where(*filters)
         .order_by(Lead.created_at.desc())
         .offset(offset)
         .limit(page_size)
