@@ -183,3 +183,7 @@ def test_logout(unauthorized_client):
     get_leads_response = unauthorized_client.get("/leads")
     assert get_leads_response.status_code == 401
     assert get_leads_response.json() == {"detail": "Unauthorized"}
+
+
+
+

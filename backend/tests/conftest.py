@@ -19,7 +19,7 @@ engine = create_engine(
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# swap get_db for a throwaway SQLite database
+# swap get_db for a throwaway in-memory SQLite database
 
 def override_get_db():
     db = TestingSessionLocal()
