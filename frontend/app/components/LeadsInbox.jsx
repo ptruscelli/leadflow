@@ -23,6 +23,8 @@ function formatDateTime(iso) {
 export default function LeadsInbox() {
   const router = useRouter();
   const [deleted, setDeleted] = useState(false);
+  const [q, setQ] = useState("");
+  const [qDebounced, setQDebounced] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [leads, setLeads] = useState(null);
@@ -32,17 +34,34 @@ export default function LeadsInbox() {
   const noteFieldRef = useRef(null);
 
   useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setQDebounced(q.trim());
+      setPage(1);
+    }, 150);
+
+    return () => clearTimeout(timeoutId);
+  }, [q]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function loadLeads() {
-      setLeads(null);
       setExpandedId(null);
       setIsAddingNote(false);
       setNoteDraft("");
 
       try {
+        const params = new URLSearchParams({
+          deleted: String(deleted),
+          page: String(page),
+          page_size: String(PAGE_SIZE),
+        });
+        if (qDebounced) {
+          params.set("q", qDebounced);
+        }
+
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/leads?deleted=${deleted}&page=${page}&page_size=${PAGE_SIZE}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/leads?${params}`,
           { credentials: "include" }
         );
 
@@ -78,7 +97,7 @@ export default function LeadsInbox() {
     return () => {
       cancelled = true;
     };
-  }, [deleted, page, router]);
+  }, [deleted, page, qDebounced, router]);
 
   useEffect(() => {
     const field = noteFieldRef.current;
@@ -240,6 +259,7 @@ export default function LeadsInbox() {
           onClick={() => {
             setDeleted(false);
             setPage(1);
+            setLeads(null);
           }}
           className={tabClass(!deleted)}
         >
@@ -250,11 +270,22 @@ export default function LeadsInbox() {
           onClick={() => {
             setDeleted(true);
             setPage(1);
+            setLeads(null);
           }}
           className={tabClass(deleted)}
         >
           Archive
         </button>
+      </div>
+
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <input
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search name, email, phone, company"
+          className="w-1/3 rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400 focus:ring-0"
+        />
       </div>
 
       <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
@@ -264,7 +295,11 @@ export default function LeadsInbox() {
           </p>
         ) : leads.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-slate-500">
-            {deleted ? "No deleted leads." : "No leads yet."}
+            {q.trim()
+              ? "No matching leads."
+              : deleted
+                ? "No deleted leads."
+                : "No leads yet."}
           </p>
         ) : (
           <ul>
@@ -395,13 +430,13 @@ export default function LeadsInbox() {
       {leads !== null && totalPages > 0 && (
         <nav
           aria-label="Lead pages"
-          className="mt-4 flex items-center justify-between text-sm text-slate-600"
+          className="mt-4 flex items-center justify-center gap-3 text-xs text-slate-600"
         >
           <button
             type="button"
             disabled={page <= 1}
             onClick={() => setPage((current) => current - 1)}
-            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+            className="cursor-pointer disabled:cursor-default disabled:opacity-40"
           >
             Previous
           </button>
@@ -412,7 +447,7 @@ export default function LeadsInbox() {
             type="button"
             disabled={page >= totalPages}
             onClick={() => setPage((current) => current + 1)}
-            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+            className="cursor-pointer disabled:cursor-default disabled:opacity-40"
           >
             Next
           </button>
