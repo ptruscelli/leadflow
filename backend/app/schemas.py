@@ -1,7 +1,7 @@
 """ Pydantic schemas for API endpoints """
 
-from pydantic import BaseModel, Field, EmailStr
-from datetime import datetime
+from pydantic import BaseModel, Field, EmailStr, field_serializer
+from datetime import datetime, timezone
 from enum import Enum
 
 
@@ -48,6 +48,15 @@ class LeadRead(LeadBase):
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None
+
+
+    @field_serializer("created_at", "updated_at", "deleted_at")
+    def serialize_dt(self, value: datetime | None):
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.isoformat()
 
 
 class LeadUpdate(BaseModel):
