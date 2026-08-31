@@ -41,7 +41,7 @@ def client():
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[require_session] = override_require_session
 
-    with TestClient(app) as test_client:
+    with TestClient(app, base_url="https://testserver") as test_client:
         yield test_client
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=engine)
@@ -53,7 +53,7 @@ def unauthorized_client():
     Base.metadata.create_all(bind=engine)
     app.dependency_overrides[get_db] = override_get_db
     # don't override require_session dependency
-    with TestClient(app) as test_client:
+    with TestClient(app, base_url="https://testserver") as test_client:
         yield test_client
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=engine)
