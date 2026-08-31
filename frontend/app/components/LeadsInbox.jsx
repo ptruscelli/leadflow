@@ -10,6 +10,16 @@ function formatStatus(status) {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
+function formatSource(source) {
+  const labels = {
+    google: "Google",
+    referral: "Referral",
+    social_media: "Social media",
+    other: "Other",
+  };
+  return labels[source] ?? source;
+}
+
 function formatDateTime(iso) {
   return new Date(iso).toLocaleString("en-GB", {
     day: "numeric",
@@ -23,6 +33,7 @@ function formatDateTime(iso) {
 export default function LeadsInbox() {
   const router = useRouter();
   const [deleted, setDeleted] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("");
   const [q, setQ] = useState("");
   const [qDebounced, setQDebounced] = useState("");
   const [page, setPage] = useState(1);
@@ -58,6 +69,9 @@ export default function LeadsInbox() {
         });
         if (qDebounced) {
           params.set("q", qDebounced);
+        }
+        if (statusFilter) {
+          params.set("status", statusFilter);
         }
 
         const response = await fetch(
@@ -97,7 +111,7 @@ export default function LeadsInbox() {
     return () => {
       cancelled = true;
     };
-  }, [deleted, page, qDebounced, router]);
+  }, [deleted, page, qDebounced, statusFilter, router]);
 
   useEffect(() => {
     const field = noteFieldRef.current;
@@ -119,12 +133,23 @@ export default function LeadsInbox() {
 
   async function updateStatus(leadId, status) {
     const previous = leads;
+    const previousPage = page;
+    const leavesFilter = Boolean(statusFilter) && status !== statusFilter;
+    const remaining = leavesFilter
+      ? leads.filter((lead) => lead.id !== leadId)
+      : leads.map((lead) =>
+          lead.id === leadId ? { ...lead, status } : lead
+        );
 
-    setLeads((current) =>
-      current.map((lead) =>
-        lead.id === leadId ? { ...lead, status } : lead
-      )
-    );
+    setLeads(remaining);
+    if (remaining.length === 0 && page > 1) {
+      setPage((currentPage) => currentPage - 1);
+    }
+    if (leavesFilter && expandedId === leadId) {
+      setExpandedId(null);
+      setIsAddingNote(false);
+      setNoteDraft("");
+    }
 
     try {
       const response = await fetch(
@@ -153,6 +178,7 @@ export default function LeadsInbox() {
     } catch (error) {
       console.error(error);
       setLeads(previous);
+      setPage(previousPage);
       alert("Failed to update status");
     }
   }
@@ -278,7 +304,7 @@ export default function LeadsInbox() {
         </button>
       </div>
 
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mb-2 flex items-center justify-between gap-4">
         <input
           type="search"
           value={q}
@@ -286,6 +312,25 @@ export default function LeadsInbox() {
           placeholder="Search name, email, phone, company"
           className="w-1/3 rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400 focus:ring-0"
         />
+        <label className="flex items-center gap-2 text-xs text-slate-600">
+          Status
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+              setLeads(null);
+            }}
+            className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-900 outline-none focus:border-slate-400 focus:ring-0"
+          >
+            <option value="">All</option>
+            {STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {formatStatus(status)}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
@@ -295,7 +340,7 @@ export default function LeadsInbox() {
           </p>
         ) : leads.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-slate-500">
-            {q.trim()
+            {q.trim() || statusFilter
               ? "No matching leads."
               : deleted
                 ? "No deleted leads."
@@ -373,6 +418,10 @@ export default function LeadsInbox() {
                           {lead.phone}
                         </p>
                       )}
+                      <p>
+                        <span className="text-slate-500">Source: </span>
+                        {formatSource(lead.source)}
+                      </p>
                       <p>
                         <span className="text-slate-500">Received: </span>
                         {formatDateTime(lead.created_at)}

@@ -42,6 +42,24 @@ export default function LoginForm() {
 
     }
 
+    if (status === "success") {
+      return (
+        <main className="mx-auto w-full max-w-md">
+          <h2 className="mb-6 text-center text-xl font-medium">Staff login</h2>
+          <p className="mb-6 text-center text-sm text-slate-600">
+            If email is on the allowlist, a login link was sent.
+          </p>
+          <button
+            type="button"
+            onClick={() => setStatus("idle")}
+            className="w-full cursor-pointer rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+          >
+            Use a different email
+          </button>
+        </main>
+      );
+    }
+
     return (
       <main className="mx-auto w-full max-w-md">
         <h2 className="mb-2 text-center text-xl font-medium">Staff login</h2>
