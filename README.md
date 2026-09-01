@@ -128,4 +128,4 @@ This project was built using cursor. After setting up the NextJS structure and d
 
 ### Architecture Diagram
 
-[Architecture diagram](docs/architecture.html)
+![Architecture diagram](<docs/Screenshot 2026-09-01 at 12-58-40 Leadflow — Architecture Diagram.png>)
