@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leadflow — Architecture Diagram</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f8fafc; color: #1e293b; padding: 2rem; }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .subtitle { color: #64748b; font-size: 0.875rem; margin-bottom: 2rem; }
+
+    .diagram { display: flex; flex-direction: column; gap: 1.5rem; }
+
+    /* Zones */
+    .zone { border-radius: 12px; padding: 1.25rem 1.5rem; }
+    .zone-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem; }
+    .zone-browser { background: #f0fdf4; border: 1.5px solid #86efac; }
+    .zone-browser .zone-label { color: #16a34a; }
+    .zone-docker  { background: #eff6ff; border: 1.5px dashed #93c5fd; }
+    .zone-docker  .zone-label { color: #2563eb; }
+    .zone-ext     { background: #fdf4ff; border: 1.5px dashed #d8b4fe; }
+    .zone-ext     .zone-label { color: #9333ea; }
+
+    /* Boxes */
+    .row { display: flex; gap: 1.25rem; align-items: flex-start; flex-wrap: wrap; }
+    .box { border-radius: 8px; padding: 0.875rem 1rem; min-width: 180px; flex: 1; }
+    .box-title { font-size: 0.8rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .box-badge { display: inline-block; font-size: 0.65rem; font-weight: 600; border-radius: 4px; padding: 1px 6px; margin-bottom: 0.4rem; }
+    .box-list { list-style: none; font-size: 0.75rem; color: #475569; line-height: 1.6; }
+    .box-list li::before { content: "• "; color: #94a3b8; }
+
+    /* Box colours */
+    .box-green  { background: #fff; border: 1.5px solid #4ade80; }
+    .box-green .box-badge { background: #dcfce7; color: #15803d; }
+    .box-blue   { background: #fff; border: 1.5px solid #60a5fa; }
+    .box-blue  .box-badge { background: #dbeafe; color: #1d4ed8; }
+    .box-slate  { background: #fff; border: 1.5px solid #94a3b8; }
+    .box-slate .box-badge { background: #f1f5f9; color: #475569; }
+    .box-purple { background: #fff; border: 1.5px solid #c084fc; }
+    .box-purple .box-badge { background: #faf5ff; color: #7e22ce; }
+
+    /* Arrows */
+    .arrows { display: flex; flex-direction: column; gap: 0.5rem; padding: 0 1rem; }
+    .arrow { display: flex; align-items: center; gap: 0.5rem; font-size: 0.72rem; color: #64748b; }
+    .arrow-line { flex: 0 0 auto; }
+    svg.arr { width: 200px; height: 20px; }
+
+    /* DB tables */
+    .db-tables { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem; }
+    .db-table { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.72rem; }
+    .db-table-name { font-weight: 700; color: #0f172a; margin-bottom: 0.25rem; }
+    .db-table ul { list-style: none; color: #64748b; line-height: 1.5; }
+    /* Flow diagrams */
+    .flow-heading { font-size: 1.1rem; font-weight: 700; padding-top: 1.5rem; border-top: 2px solid #e2e8f0; }
+    .flow-card { background: white; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 1.25rem 1.5rem; }
+    .flow-card h3 { font-size: 0.82rem; font-weight: 700; margin-bottom: 1rem; color: #374151; }
+    .flow-card svg { max-width: 100%; height: auto; display: block; }
+    .flow-gap { margin-top: 1.25rem; }
+  </style>
+</head>
+<body>
+  <h1>Leadflow — Architecture Diagram</h1>
+  <p class="subtitle">System overview: components, dependencies, data flow</p>
+
+  <div class="diagram">
+
+    <!-- Browser / Frontend -->
+    <div class="zone zone-browser">
+      <div class="zone-label">Browser (User)</div>
+      <div class="row">
+        <div class="box box-green">
+          <div class="box-badge">Next.js 16 · React 19</div>
+          <div class="box-title">Frontend — port 3000</div>
+          <ul class="box-list">
+            <li>Public enquiry form (<code>/</code>)</li>
+            <li>Login page (<code>/login</code>)</li>
+            <li>Magic-link callback (<code>/auth/login</code>)</li>
+            <li>Staff leads inbox (<code>/leads</code>)</li>
+            <li>Tailwind CSS for styling</li>
+            <li>Session via httpOnly cookie</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow: Frontend → Backend -->
+    <div class="arrows">
+      <div class="arrow">
+        <svg class="arr" viewBox="0 0 200 20"><line x1="0" y1="10" x2="190" y2="10" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3"/><polygon points="190,6 200,10 190,14" fill="#94a3b8"/></svg>
+        <span>HTTP REST (JSON) · CORS · httpOnly cookie session · port 8000</span>
+      </div>
+    </div>
+
+    <!-- Docker Compose zone: Backend + DB -->
+    <div class="zone zone-docker">
+      <div class="zone-label">Docker Compose — service: backend</div>
+      <div class="row">
+
+        <!-- Backend -->
+        <div class="box box-blue">
+          <div class="box-badge">FastAPI · Python · Uvicorn</div>
+          <div class="box-title">Backend — port 8000</div>
+          <ul class="box-list">
+            <li><strong>POST /leads</strong> — public, create lead</li>
+            <li><strong>GET /leads</strong> — auth, paginated + filtered</li>
+            <li><strong>GET /leads/{id}</strong> — auth, single lead</li>
+            <li><strong>PATCH /leads/{id}</strong> — auth, update status/note</li>
+            <li><strong>DELETE /leads/{id}</strong> — auth, soft-delete</li>
+            <li><strong>POST /auth/magic-link</strong> — send login email</li>
+            <li><strong>POST /auth/login</strong> — redeem token → session</li>
+            <li><strong>POST /auth/logout</strong> — destroy session</li>
+            <li>Staff allowlist checked at login request</li>
+            <li>Alembic runs migrations on startup</li>
+          </ul>
+        </div>
+
+        <!-- SQLite DB -->
+        <div class="box box-slate">
+          <div class="box-badge">SQLite · Docker volume: sqlite_data</div>
+          <div class="box-title">Database — file: /app/data</div>
+          <div class="db-tables">
+            <div class="db-table">
+              <div class="db-table-name">leads</div>
+              <ul><li>id, name, email, company</li><li>phone, source, message</li><li>status, note</li><li>created_at, updated_at, deleted_at</li></ul>
+            </div>
+            <div class="db-table">
+              <div class="db-table-name">magic_links</div>
+              <ul><li>id, email, token_hash</li><li>created_at, expires_at, used_at</li></ul>
+            </div>
+            <div class="db-table">
+              <div class="db-table-name">sessions</div>
+              <ul><li>id, email, token_hash</li><li>created_at, expires_at</li></ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Arrow: Backend → Resend -->
+    <div class="arrows">
+      <div class="arrow">
+        <svg class="arr" viewBox="0 0 200 20"><line x1="0" y1="10" x2="190" y2="10" stroke="#c084fc" stroke-width="1.5" stroke-dasharray="4 3"/><polygon points="190,6 200,10 190,14" fill="#c084fc"/></svg>
+        <span>HTTPS API call on magic-link request (token hash stored, never raw token)</span>
+      </div>
+    </div>
+
+    <!-- External: Resend -->
+    <div class="zone zone-ext">
+      <div class="zone-label">External Service</div>
+      <div class="row">
+        <div class="box box-purple">
+          <div class="box-badge">resend.com — Transactional Email API</div>
+          <div class="box-title">Resend Email</div>
+          <ul class="box-list">
+            <li>Sends magic-link login emails to staff</li>
+            <li>Auth via <code>RESEND_API_KEY</code> env var</li>
+            <li>Sender address: <code>RESEND_SENDER_EMAIL</code></li>
+            <li>If call fails, login URL still logged server-side</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Flow Diagrams                                       -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <h2 class="flow-heading">Flow Diagrams</h2>
+
+    <!-- 1. Login Flow -->
+    <div class="flow-card">
+      <h3>1 — Staff Login (Magic Link Authentication)</h3>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 870 570" font-family="system-ui,sans-serif">
+        <defs>
+          <marker id="ml-req" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><polygon points="0,0 10,4 0,8" fill="#374151"/></marker>
+          <marker id="ml-resp" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><polygon points="0,0 10,4 0,8" fill="#94a3b8"/></marker>
+        </defs>
+        <!-- Actor boxes -->
+        <rect x="15" y="10" width="150" height="38" rx="6" fill="#dcfce7" stroke="#4ade80" stroke-width="1.5"/>
+        <text x="90" y="33" text-anchor="middle" font-size="13" font-weight="700" fill="#15803d">Browser</text>
+        <rect x="245" y="10" width="150" height="38" rx="6" fill="#dbeafe" stroke="#60a5fa" stroke-width="1.5"/>
+        <text x="320" y="33" text-anchor="middle" font-size="13" font-weight="700" fill="#1d4ed8">Backend</text>
+        <rect x="475" y="10" width="140" height="38" rx="6" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="545" y="33" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">SQLite DB</text>
+        <rect x="690" y="10" width="130" height="38" rx="6" fill="#faf5ff" stroke="#c084fc" stroke-width="1.5"/>
+        <text x="755" y="33" text-anchor="middle" font-size="13" font-weight="700" fill="#7e22ce">Resend</text>
+        <!-- Lifelines -->
+        <line x1="90"  y1="48" x2="90"  y2="560" stroke="#4ade80" stroke-width="1" stroke-dasharray="4 3" opacity="0.5"/>
+        <line x1="320" y1="48" x2="320" y2="560" stroke="#60a5fa" stroke-width="1" stroke-dasharray="4 3" opacity="0.5"/>
+        <line x1="545" y1="48" x2="545" y2="560" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3" opacity="0.5"/>
+        <line x1="755" y1="48" x2="755" y2="560" stroke="#c084fc" stroke-width="1" stroke-dasharray="4 3" opacity="0.5"/>
+
+        <!-- 1: Browser → Backend: POST /auth/magic-link -->
+        <text x="205" y="74" text-anchor="middle" font-size="11" fill="#374151">POST /auth/magic-link  {email}</text>
+        <line x1="90" y1="82" x2="320" y2="82" stroke="#374151" stroke-width="1.5" marker-end="url(#ml-req)"/>
+        <!-- 2: Backend — check allowlist -->
+        <rect x="330" y="94" width="205" height="22" rx="4" fill="#fef9c3" stroke="#fbbf24" stroke-width="1"/>
+        <text x="338" y="109" font-size="10" fill="#92400e">✓ check email ∈ staff allowlist</text>
+        <!-- 3: Backend → SQLite: INSERT magic_link -->
+        <text x="432" y="136" text-anchor="middle" font-size="11" fill="#374151">INSERT magic_link (token_hash, expires_at +10 min)</text>
+        <line x1="320" y1="144" x2="545" y2="144" stroke="#374151" stroke-width="1.5" marker-end="url(#ml-req)"/>
+        <!-- 4: Backend → Resend: send email -->
+        <text x="537" y="172" text-anchor="middle" font-size="11" fill="#374151">send email — raw token in link URL</text>
+        <line x1="320" y1="180" x2="755" y2="180" stroke="#374151" stroke-width="1.5" marker-end="url(#ml-req)"/>
+        <!-- 5: Resend → Browser: email delivered (dashed) -->
+        <text x="422" y="208" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">magic link email → staff inbox</text>
+        <line x1="755" y1="216" x2="90" y2="216" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ml-resp)"/>
+
+        <!-- Divider -->
+        <line x1="20" y1="242" x2="850" y2="242" stroke="#e2e8f0" stroke-width="1.5"/>
+        <text x="435" y="254" text-anchor="middle" font-size="10" fill="#94a3b8" font-style="italic">↓  Staff clicks the magic link in their email  ↓</text>
+
+        <!-- 6: Browser → Backend: POST /auth/login -->
+        <text x="205" y="278" text-anchor="middle" font-size="11" fill="#374151">POST /auth/login  {raw_token}</text>
+        <line x1="90" y1="286" x2="320" y2="286" stroke="#374151" stroke-width="1.5" marker-end="url(#ml-req)"/>
+        <!-- 7: Backend → SQLite: SELECT magic_link -->
+        <text x="432" y="314" text-anchor="middle" font-size="11" fill="#374151">SELECT magic_link WHERE token_hash = sha256(token)</text>
+        <line x1="320" y1="322" x2="545" y2="322" stroke="#374151" stroke-width="1.5" marker-end="url(#ml-req)"/>
+        <!-- 8: SQLite → Backend: row returned (dashed) -->
+        <text x="432" y="350" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">magic_link row</text>
+        <line x1="545" y1="358" x2="320" y2="358" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ml-resp)"/>
+        <!-- 9: Backend — validate -->
+        <rect x="330" y="370" width="215" height="22" rx="4" fill="#fef9c3" stroke="#fbbf24" stroke-width="1"/>
+        <text x="338" y="385" font-size="10" fill="#92400e">✓ validate: not used &amp; not expired</text>
+        <!-- 10: Backend → SQLite: UPDATE + INSERT session -->
+        <text x="432" y="412" text-anchor="middle" font-size="11" fill="#374151">UPDATE used_at = now;  INSERT session (hash, +8h)</text>
+        <line x1="320" y1="420" x2="545" y2="420" stroke="#374151" stroke-width="1.5" marker-end="url(#ml-req)"/>
+        <!-- 11: Backend → Browser: 200 OK + cookie (dashed) -->
+        <text x="205" y="452" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">200 OK + Set-Cookie: session (httpOnly, 8h)</text>
+        <line x1="320" y1="460" x2="90" y2="460" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ml-resp)"/>
+        <!-- 12: Browser — redirect -->
+        <rect x="15" y="473" width="150" height="22" rx="4" fill="#dcfce7" stroke="#4ade80" stroke-width="1"/>
+        <text x="23" y="488" font-size="10" fill="#15803d">✓ redirect to /leads</text>
+      </svg>
+    </div>
+
+    <!-- 2. Form Submission Flow -->
+    <div class="flow-card flow-gap">
+      <h3>2 — Visitor Enquiry Form Submission</h3>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 730 320" font-family="system-ui,sans-serif">
+        <defs>
+          <marker id="fs-req" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><polygon points="0,0 10,4 0,8" fill="#374151"/></marker>
+          <marker id="fs-resp" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><polygon points="0,0 10,4 0,8" fill="#94a3b8"/></marker>
+        </defs>
+        <!-- Actor boxes -->
+        <rect x="15" y="10" width="150" height="38" rx="6" fill="#dcfce7" stroke="#4ade80" stroke-width="1.5"/>
+        <text x="90" y="33" text-anchor="middle" font-size="13" font-weight="700" fill="#15803d">Browser</text>
+        <rect x="280" y="10" width="150" height="38" rx="6" fill="#dbeafe" stroke="#60a5fa" stroke-width="1.5"/>
+        <text x="355" y="33" text-anchor="middle" font-size="13" font-weight="700" fill="#1d4ed8">Backend</text>
+        <rect x="545" y="10" width="140" height="38" rx="6" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="615" y="33" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">SQLite DB</text>
+        <!-- Lifelines -->
+        <line x1="90"  y1="48" x2="90"  y2="312" stroke="#4ade80" stroke-width="1" stroke-dasharray="4 3" opacity="0.5"/>
+        <line x1="355" y1="48" x2="355" y2="312" stroke="#60a5fa" stroke-width="1" stroke-dasharray="4 3" opacity="0.5"/>
+        <line x1="615" y1="48" x2="615" y2="312" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3" opacity="0.5"/>
+
+        <!-- 1: Browser → Backend: POST /leads -->
+        <text x="222" y="72" text-anchor="middle" font-size="11" fill="#374151">POST /leads</text>
+        <text x="222" y="83" text-anchor="middle" font-size="10" fill="#64748b">{name, email, company, phone, source, message}</text>
+        <line x1="90" y1="91" x2="355" y2="91" stroke="#374151" stroke-width="1.5" marker-end="url(#fs-req)"/>
+        <!-- 2: Backend — validate schema -->
+        <rect x="365" y="103" width="180" height="22" rx="4" fill="#fef9c3" stroke="#fbbf24" stroke-width="1"/>
+        <text x="373" y="118" font-size="10" fill="#92400e">✓ validate schema (Pydantic)</text>
+        <!-- 3: Backend → SQLite: INSERT lead -->
+        <text x="485" y="144" text-anchor="middle" font-size="11" fill="#374151">INSERT lead (status = 'new')</text>
+        <line x1="355" y1="152" x2="615" y2="152" stroke="#374151" stroke-width="1.5" marker-end="url(#fs-req)"/>
+        <!-- 4: SQLite → Backend: lead row (dashed) -->
+        <text x="485" y="180" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">lead row (id assigned)</text>
+        <line x1="615" y1="188" x2="355" y2="188" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#fs-resp)"/>
+        <!-- 5: Backend → Browser: 201 Created (dashed) -->
+        <text x="222" y="216" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">201 Created  {lead}</text>
+        <line x1="355" y1="224" x2="90" y2="224" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#fs-resp)"/>
+        <!-- 6: Browser — success -->
+        <rect x="15" y="237" width="150" height="22" rx="4" fill="#dcfce7" stroke="#4ade80" stroke-width="1"/>
+        <text x="23" y="252" font-size="10" fill="#15803d">✓ show success confirmation</text>
+      </svg>
+    </div>
+
+    <!-- Legend -->
+    <div style="margin-top:0.5rem; font-size:0.72rem; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:1rem;">
+      <strong>Notes:</strong>
+      Frontend is <em>not</em> inside Docker Compose — run separately with <code>npm run dev</code> (port 3000).
+      Backend Docker Compose service builds from <code>./backend/Dockerfile</code> and mounts an SQLite volume.
+      Demo seed data (15 leads) is generated on first startup when <code>GENERATE_DEMO_DATA=true</code>.
+      All tokens are hashed (SHA-256) before storage — raw tokens never touch the database.
+    </div>
+
+  </div>
+</body>
+</html>

@@ -5,6 +5,8 @@ Leadflow is a small CRM for a fictional agency Brightline Studios. Visitors send
 
 The frontend is Next.js (live at [https://leadflow-iota-one.vercel.app](https://leadflow-iota-one.vercel.app)), but will not be functional until the backend is also running. The backend is FastAPI in Docker, with SQLite and Alembic. The live site talks to a backend on your machine at `http://localhost:8000`.
 
+[Architecture diagram at the bottom of the page](#architecture-diagram)
+
 
 ## Getting it running
 
@@ -90,20 +92,40 @@ GitHub Actions runs pytest and `docker compose build` on each push to `main`.
 
 **Offset pagination** chosen over cursor, as offset seems better choice for admin tables, search results, and ability to jump to arbitrary page if needed.  Default page size is 10, max 50.
 
-**Search** is `ILIKE` (SQL LIKE) on name, email, phone, and company. No index on those columns as a contains-search cannot use a normal B-tree. Token hashes already have unique indexes. `leads.status` is indexed for filtering.
+**Search** is `ILIKE` (SQL LIKE) on name, email, phone, and company. No index on those columns as a contains-search cannot use a normal B-tree. Token hashes already have unique indexes. `leads.status` is indexed for filtering. Uses escape_wildcards function to escape ILIKE wildcards.
 
 **Cookies** are `HttpOnly`, `Secure` (when `SECURE_COOKIES=True`), and `SameSite=None` so the Vercel frontend can call the local API. That is a cross-site setup. CORS only allows the configured frontend origin and `http://localhost:3000`.
 
 **Naive SQLite datetimes** are labelled UTC when the API returns them, so the UI shows the right local time.
 
+
+### Summary of login flow
+
+- Staff submit email; browser `POST /auth/magic-link`.
+- If the email is on `STAFF_ALLOWLIST`, create a raw token, store only SHA-256, email `/auth/login?token=...` (and log it when the fallback is on). Always return the same 200 either way.
+- Click loads the frontend; it `POST /auth/login` with `{ raw_token }`.
+- API hashes the token, loads that row, rejects if missing, used, or past 10 minutes, then sets `used_at`.
+- API creates a new session token, stores its hash, returns `Set-Cookie` (`HttpOnly`, 8 hours).
+- Frontend sends the user to `/leads`; later requests send the cookie and `require_session` checks it.
+
 ## With more time
 
+- Add playwright UI tests covering the login flow, enquiry form submission etc
+- Add periodic or startup job to remove expired magic links and sessions from db 
+- Composite index `(deleted_at`, `status)`
+- GET /health endpoint ?
+- Metrics/monitoring
 - Index `created_at` / `updated_at` so staff can sort by date.
-- Rate-limit `POST /auth/magic-link`.
-- Escape `%` and `_` in `ILIKE` search.
+- Rate-limiting for `POST /auth/magic-link`.
 - SQLite FTS5 for faster text search.
 - Typescript
 
 #### AI tools
 
 This project was built using cursor. After setting up the NextJS structure and desired pages, a lot of the frontend react and tailwind code was AI generated with my direction and constraints.
+
+
+
+### Architecture Diagram
+
+[Architecture diagram](docs/architecture.html)
