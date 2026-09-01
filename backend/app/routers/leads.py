@@ -14,10 +14,17 @@ from app.deps import require_session, get_db
 
 router = APIRouter(prefix="/leads", tags=["leads"])
 
+# helper function to escape wildcards in SQL queries
+def escape_wildcards(query: str):
+    return (query.replace("\\", "\\\\") # need this first to escape backslashes
+                .replace("%", "\\%")
+                .replace("_", "\\_") 
+    )
+
 
 
 # POST endpoint after receiving validated form from frontend
-# add data from form to database
+# add data to database
 
 @router.post("", response_model=LeadRead, status_code=201)
 def create_lead(body: LeadCreate, db: Session = Depends(get_db)):
@@ -63,12 +70,13 @@ def get_leads(
 
     if q and q.strip(): # if q is not None or q is not empty string
         q = q.strip() # remove whitespace
+        q = escape_wildcards(q) # escape wildcards in SQL query
         filters.append(
             or_( # only need one matching filter 
-            Lead.name.ilike(f"%{q}%"),
-            Lead.email.ilike(f"%{q}%"),
-            Lead.phone.ilike(f"%{q}%"),
-            Lead.company.ilike(f"%{q}%"),
+            Lead.name.ilike(f"%{q}%", escape="\\"),
+            Lead.email.ilike(f"%{q}%", escape="\\"),
+            Lead.phone.ilike(f"%{q}%", escape="\\"),
+            Lead.company.ilike(f"%{q}%", escape="\\"),
         )) 
 
        
